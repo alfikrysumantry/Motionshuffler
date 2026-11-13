@@ -1,0 +1,539 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Name Shuffler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@500&display=swap">
+<style>
+/* Layout: one centered column. Controls sit on top; below them a roomy stage where the tiles tumble, then line up in order. */
+:root{
+  --bg:#EBEFF3; --surface:#FFFFFF; --line:#D3DAE2; --dot:#E4E9EF;
+  --ink:#16202B; --ink-on:#FFFFFF; --muted:#566373;
+  --accent:#2F55E6; --accent-on:#FFFFFF; --shadow:rgba(22,32,43,.38);
+  --t1:#F3CF5B; --t1f:#2A2100;
+  --t2:#86D6B3; --t2f:#072B1D;
+  --t3:#9FCBF7; --t3f:#08233F;
+  --t4:#F6A9A9; --t4f:#3A0B0B;
+  --t5:#CBBDF4; --t5f:#1D1141;
+  --t6:#F7B880; --t6f:#3A1C00;
+  --display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --body:"DM Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11151A; --surface:#1A2028; --line:#2B3541; --dot:#232B35;
+    --ink:#E8EEF4; --ink-on:#11151A; --muted:#94A1B0;
+    --accent:#8097FF; --accent-on:#0D1330; --shadow:rgba(0,0,0,.65);
+    --t1:#8B7010; --t1f:#FFF2C2;
+    --t2:#1E6B4F; --t2f:#D8F6E9;
+    --t3:#2B5D96; --t3f:#DDECFF;
+    --t4:#8F3F49; --t4f:#FFE1E1;
+    --t5:#5A4A9B; --t5f:#E9E1FF;
+    --t6:#96571F; --t6f:#FFE7CF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11151A; --surface:#1A2028; --line:#2B3541; --dot:#232B35;
+  --ink:#E8EEF4; --ink-on:#11151A; --muted:#94A1B0;
+  --accent:#8097FF; --accent-on:#0D1330; --shadow:rgba(0,0,0,.65);
+  --t1:#8B7010; --t1f:#FFF2C2;
+  --t2:#1E6B4F; --t2f:#D8F6E9;
+  --t3:#2B5D96; --t3f:#DDECFF;
+  --t4:#8F3F49; --t4f:#FFE1E1;
+  --t5:#5A4A9B; --t5f:#E9E1FF;
+  --t6:#96571F; --t6f:#FFE7CF;
+  color-scheme:dark;
+}
+
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);-webkit-text-size-adjust:100%}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.app{
+  max-width:880px;margin:0 auto;
+  padding-block:28px 44px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:14px;
+}
+header{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
+h1{font:800 clamp(28px,6vw,40px)/1.05 var(--display);letter-spacing:-.025em;margin:0;text-wrap:balance}
+.lede{margin:0;color:var(--muted)}
+
+.adder{display:flex;gap:10px}
+input[type="text"]{
+  flex:1;min-width:0;height:46px;padding:0 14px;border-radius:12px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  font:400 16px var(--body);
+}
+input[type="text"]::placeholder{color:var(--muted);opacity:.8}
+input[type="text"]:disabled{opacity:.6}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:46px;padding:0 18px;border-radius:12px;border:1px solid transparent;
+  font:500 15px var(--body);cursor:pointer;white-space:nowrap;
+  transition:filter .15s ease, transform .05s ease;
+}
+.btn:hover:not(:disabled){filter:brightness(1.06)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:18px;height:18px;flex:none}
+.btn-primary{background:var(--accent);color:var(--accent-on);padding:0 22px;font-weight:700}
+.btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn-ghost{background:transparent;color:var(--muted);border-color:transparent}
+.btn-ghost:hover:not(:disabled){color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.hint{margin:-4px 0 0;font-size:13px;color:var(--muted)}
+
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.status{margin-left:auto;font:500 13px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+
+.arena{
+  position:relative;height:340px;overflow:hidden;
+  border:1px solid var(--line);border-radius:20px;
+  background-color:var(--surface);
+  background-image:radial-gradient(var(--dot) 1.2px, transparent 1.5px);
+  background-size:22px 22px;
+  transition:height .4s ease;
+}
+.empty{position:absolute;inset:0;display:grid;place-content:center;gap:4px;text-align:center;padding:24px;color:var(--muted)}
+.empty strong{font:800 20px var(--display);color:var(--ink)}
+
+.tile{
+  position:absolute;left:0;top:0;
+  display:grid;place-items:center;text-align:center;padding:10px;
+  border-radius:14px;user-select:none;-webkit-user-select:none;
+  background:var(--tc);color:var(--tf);
+  font-family:var(--display);font-weight:800;line-height:1.1;letter-spacing:-.01em;
+  box-shadow:0 1px 0 rgba(0,0,0,.06), 0 8px 14px -8px var(--shadow);
+  will-change:transform;
+  transition:transform .45s cubic-bezier(.22,1,.36,1), width .45s ease, height .45s ease, font-size .45s ease, opacity .25s ease;
+}
+.c0{--tc:var(--t1);--tf:var(--t1f)} .c1{--tc:var(--t2);--tf:var(--t2f)} .c2{--tc:var(--t3);--tf:var(--t3f)}
+.c3{--tc:var(--t4);--tf:var(--t4f)} .c4{--tc:var(--t5);--tf:var(--t5f)} .c5{--tc:var(--t6);--tf:var(--t6f)}
+.name{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;padding-bottom:1px}
+
+.badge{
+  position:absolute;top:-10px;left:-10px;min-width:26px;height:26px;padding:0 7px;
+  display:grid;place-items:center;border-radius:13px;
+  background:var(--ink);color:var(--ink-on);
+  font:500 13px/1 var(--mono);font-variant-numeric:tabular-nums;
+  box-shadow:0 0 0 2px var(--surface);
+  z-index:1;
+  transform:scale(0);transition:transform .15s ease;
+}
+.arena.show-order .badge{transform:scale(1);transition:transform .38s cubic-bezier(.3,1.6,.5,1) var(--bd,0ms)}
+
+.x{
+  position:absolute;top:2px;right:2px;width:28px;height:28px;border:0;border-radius:50%;
+  background:transparent;color:inherit;opacity:.5;cursor:pointer;
+  font:500 17px/1 var(--body);display:grid;place-items:center;padding:0 0 2px;
+}
+.x:hover,.x:focus-visible{opacity:1;background:rgba(0,0,0,.14)}
+
+.arena.is-spinning .tile{transition:none;box-shadow:0 1px 0 rgba(0,0,0,.06), 0 16px 22px -10px var(--shadow)}
+.arena.is-settling .tile{transition:transform .9s cubic-bezier(.22,1,.36,1) var(--d,0ms), width .45s ease, height .45s ease, font-size .45s ease}
+.arena.no-trans .tile{transition:none}
+.arena.is-spinning .x,.arena.is-settling .x{visibility:hidden}
+
+.clock{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 0 4px}
+.clock-time{font:500 clamp(34px,9vw,52px)/1 var(--mono);letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.clock-sec{color:var(--accent)}
+.clock-date{font-size:13px;color:var(--muted)}
+
+@media (max-width:480px){
+  .adder .btn{padding:0 14px}
+  .status{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion: reduce){
+  .tile,.arena.is-settling .tile{transition-duration:.25s !important;transition-delay:0s !important}
+  .arena.show-order .badge{transition-duration:.01ms;transition-delay:0s}
+  .arena{transition:none}
+}
+</style>
+
+<main class="app">
+  <header>
+    <h1>Name Shuffler</h1>
+    <p class="lede">Add your names, then randomize the order.</p>
+  </header>
+
+  <form id="addForm" class="adder" autocomplete="off">
+    <label class="sr" for="nameInput">Name to add</label>
+    <input id="nameInput" type="text" maxlength="200" placeholder="Type a name" enterkeyhint="done">
+    <button id="addBtn" class="btn btn-secondary" type="submit">Add</button>
+  </form>
+  <p id="hint" class="hint"></p>
+
+  <div class="bar">
+    <button id="go" class="btn btn-primary" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+      <span id="goLabel">Randomize</span>
+    </button>
+    <button id="clear" class="btn btn-ghost" type="button">Clear all</button>
+    <span id="status" class="status"></span>
+  </div>
+
+  <section id="arena" class="arena" role="group" aria-label="Names">
+    <div id="empty" class="empty" hidden>
+      <strong>No names yet</strong>
+      <span>Type a name above and press Enter.</span>
+    </div>
+  </section>
+  <div class="clock" role="timer" aria-label="Current time">
+    <div class="clock-time"><span id="clockHM">00:00</span><span class="clock-sec">:<span id="clockS">00</span></span></div>
+    <div id="clockDate" class="clock-date"></div>
+  </div>
+  <div id="live" class="sr" aria-live="polite"></div>
+</main>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const arena = $('#arena'), form = $('#addForm'), input = $('#nameInput'), addBtn = $('#addBtn');
+  const go = $('#go'), goLabel = $('#goLabel'), clearBtn = $('#clear');
+  const statusEl = $('#status'), hint = $('#hint'), emptyEl = $('#empty'), live = $('#live');
+
+  const GAP = 12, PADX = 24, PADY = 30, MAX = 40, NAME_MAX = 24, SPIN_MS = 2700;
+  let items = [], ordered = false, busy = false, sample = true, nextId = 0;
+  let geo = { S: 100, W: 0, H: 340, pos: [] };
+  const reduceMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  /* ---------- randomness ---------- */
+  function rand(n) {
+    if (window.crypto && crypto.getRandomValues) {
+      const u = new Uint32Array(1), lim = Math.floor(0x100000000 / n) * n;
+      let x;
+      do { crypto.getRandomValues(u); x = u[0]; } while (x >= lim);
+      return x % n;
+    }
+    return Math.floor(Math.random() * n);
+  }
+  function shuffle(list) {
+    const a = list.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = rand(i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  /* A re-run must move every name: reshuffle until nobody keeps their previous position. */
+  function derange(list) {
+    for (let t = 0; t < 500; t++) {
+      const a = shuffle(list);
+      if (a.every((it, i) => it !== list[i])) return a;
+    }
+    const k = 1 + rand(list.length - 1);
+    return list.map((_, i) => list[(i + k) % list.length]);
+  }
+
+  /* ---------- layout: a line of squares, wrapping only when they get too small ---------- */
+  function computeGeo() {
+    const n = items.length, W = arena.clientWidth;
+    const minH = W < 520 ? 300 : 340;
+    if (!n) { geo = { S: 100, W, H: minH, pos: [] }; arena.style.height = minH + 'px'; return; }
+    const inner = W - 2 * PADX;
+    let rows = 1, S;
+    for (;; rows++) {
+      const cols = Math.ceil(n / rows);
+      S = Math.floor((inner - GAP * (cols - 1)) / cols);
+      if (S >= 64 || cols === 1) break;
+    }
+    S = Math.max(48, Math.min(S, 108));
+    const counts = [];
+    for (let r = 0; r < rows; r++) counts.push(Math.floor(n / rows) + (r < n % rows ? 1 : 0));
+    const rowsH = rows * S + (rows - 1) * GAP;
+    const H = Math.max(minH, rowsH + 2 * PADY);
+    const top = (H - rowsH) / 2;
+    const pos = [];
+    for (let r = 0; r < rows; r++) {
+      const c = counts[r], rw = c * S + (c - 1) * GAP, x0 = (W - rw) / 2;
+      for (let k = 0; k < c; k++) pos.push({ x: x0 + k * (S + GAP), y: top + r * (S + GAP) });
+    }
+    geo = { S, W, H, pos };
+    arena.style.height = H + 'px';
+  }
+
+  function fontFor(text, S) {
+    const longest = Math.max(...text.split(' ').map((w) => w.length));
+    const fit = (S - 22) / (longest * 0.6);
+    return Math.max(S * 0.12, Math.min(S * 0.26, fit));
+  }
+  function sizeTile(it) {
+    it.el.style.width = it.el.style.height = geo.S + 'px';
+    it.el.style.fontSize = fontFor(it.text, geo.S).toFixed(1) + 'px';
+  }
+  function paint(it) {
+    it.el.style.transform = `translate(${it.x}px, ${it.y}px) rotate(${it.rot}deg) scale(${it.sc})`;
+  }
+
+  /* ---------- tiles ---------- */
+  function build(it) {
+    const el = document.createElement('div');
+    el.className = 'tile c' + it.cls;
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.setAttribute('aria-hidden', 'true');
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = it.text;
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'x';
+    x.setAttribute('aria-label', 'Remove ' + it.text);
+    x.textContent = '×';
+    x.addEventListener('click', () => removeItem(it.id));
+    el.append(badge, name, x);
+    it.el = el;
+    it.badge = badge;
+  }
+
+  function updateBadges() {
+    const step = Math.min(70, 900 / Math.max(items.length, 1));
+    items.forEach((it, i) => {
+      it.badge.textContent = String(i + 1);
+      /* Badges stick out to the left and top, so each tile stacks above the ones before it in the line. */
+      it.el.style.zIndex = String(i + 1);
+      it.el.style.setProperty('--bd', Math.round(i * step) + 'ms');
+    });
+  }
+
+  function updateUI() {
+    const n = items.length;
+    go.disabled = busy || n < 2;
+    goLabel.textContent = busy ? 'Shuffling…' : ordered ? 'Randomize again' : 'Randomize';
+    clearBtn.disabled = busy || n === 0;
+    addBtn.disabled = busy;
+    input.disabled = busy;
+    emptyEl.hidden = n > 0;
+    if (busy) statusEl.textContent = 'Shuffling ' + n + ' names';
+    else if (n < 2) statusEl.textContent = n === 0 ? 'No names yet' : 'Add at least 2 names';
+    else statusEl.textContent = (ordered ? 'Order set · ' : '') + n + ' names';
+    if (n >= MAX) hint.textContent = 'Limit reached: ' + MAX + ' names.';
+    else if (ordered && n > 1) hint.textContent = 'Each re-run moves every name to a new position.';
+    else if (sample) hint.textContent = 'Sample names are loaded. Clear all to start with your own.';
+    else hint.textContent = 'Press Enter to add. Paste a list to add several at once.';
+  }
+
+  function setOrdered(v) {
+    ordered = v;
+    arena.classList.toggle('show-order', v);
+  }
+
+  function render() {
+    computeGeo();
+    items.forEach((it, i) => {
+      const p = geo.pos[i];
+      if (!it.el) {
+        build(it);
+        arena.appendChild(it.el);
+        it.x = p.x; it.y = p.y; it.rot = 0; it.sc = 0.3;
+        sizeTile(it); paint(it);
+        it.el.style.opacity = '0';
+        void it.el.offsetWidth;
+        it.sc = 1;
+        it.el.style.opacity = '1';
+        paint(it);
+      } else {
+        it.x = p.x; it.y = p.y;
+        sizeTile(it); paint(it);
+      }
+    });
+    updateBadges();
+    updateUI();
+  }
+
+  /* ---------- editing the list ---------- */
+  function addNames(raw) {
+    if (busy) return;
+    const parts = raw.split(/[\n\r,;]+/)
+      .map((s) => s.replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .map((s) => s.slice(0, NAME_MAX));
+    const room = MAX - items.length;
+    if (!parts.length || room <= 0) return;
+    parts.slice(0, room).forEach((text) => {
+      const id = nextId++;
+      items.push({ id, text, cls: id % 6, el: null, badge: null, x: 0, y: 0, rot: 0, sc: 1, vx: 0, vy: 0, vr: 0 });
+    });
+    sample = false;
+    setOrdered(false);
+    render();
+  }
+
+  function dropEl(it) {
+    it.sc = 0.3;
+    it.el.style.opacity = '0';
+    it.el.style.pointerEvents = 'none';
+    paint(it);
+    setTimeout(() => it.el.remove(), 320);
+  }
+  function removeItem(id) {
+    if (busy) return;
+    const i = items.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    const [it] = items.splice(i, 1);
+    sample = false;
+    dropEl(it);
+    render();
+  }
+  function clearAll() {
+    if (busy || !items.length) return;
+    items.forEach(dropEl);
+    items = [];
+    sample = false;
+    setOrdered(false);
+    live.textContent = '';
+    render();
+    input.focus();
+  }
+
+  /* ---------- the shuffle: tumble, then settle into a line ---------- */
+  function spin(ms) {
+    return new Promise((resolve) => {
+      arena.classList.add('is-spinning');
+      const { W, H, S } = geo;
+      items.forEach((it) => {
+        const a = Math.random() * Math.PI * 2, sp = 420 + Math.random() * 460;
+        it.vx = Math.cos(a) * sp;
+        it.vy = Math.sin(a) * sp;
+        it.vr = (Math.random() < 0.5 ? -1 : 1) * (320 + Math.random() * 760);
+      });
+      const start = performance.now();
+      let last = start;
+      function frame(t) {
+        const dt = Math.min(0.034, (t - last) / 1000);
+        last = t;
+        const ramp = Math.min(1, 0.35 + (t - start) / 400);
+        items.forEach((it) => {
+          const turn = (Math.random() - 0.5) * 7 * dt, c = Math.cos(turn), s = Math.sin(turn);
+          const vx = it.vx * c - it.vy * s, vy = it.vx * s + it.vy * c;
+          it.vx = vx; it.vy = vy;
+          it.x += vx * dt * ramp;
+          it.y += vy * dt * ramp;
+          it.rot += it.vr * dt * ramp;
+          if (it.x < 0) { it.x = 0; it.vx = Math.abs(it.vx); }
+          else if (it.x > W - S) { it.x = W - S; it.vx = -Math.abs(it.vx); }
+          if (it.y < 0) { it.y = 0; it.vy = Math.abs(it.vy); }
+          else if (it.y > H - S) { it.y = H - S; it.vy = -Math.abs(it.vy); }
+          paint(it);
+        });
+        if (t - start < ms) requestAnimationFrame(frame);
+        else resolve();
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  function settle(reduce) {
+    return new Promise((resolve) => {
+      const n = items.length, step = Math.min(70, 1100 / n);
+      arena.classList.remove('is-spinning');
+      void arena.offsetWidth;
+      arena.classList.add('is-settling');
+      items.forEach((it, i) => {
+        it.el.style.setProperty('--d', (reduce ? 0 : Math.round(i * step)) + 'ms');
+        it.rot = Math.round(it.rot / 360) * 360;
+        it.x = geo.pos[i].x;
+        it.y = geo.pos[i].y;
+        sizeTile(it);
+        paint(it);
+      });
+      const total = reduce ? 350 : 900 + (n - 1) * step;
+      setTimeout(() => {
+        arena.classList.remove('is-settling');
+        arena.classList.add('no-trans');
+        items.forEach((it) => { it.rot = 0; paint(it); });
+        void arena.offsetWidth;
+        arena.classList.remove('no-trans');
+        resolve();
+      }, total + 60);
+    });
+  }
+
+  async function run() {
+    if (busy || items.length < 2) return;
+    const rerun = ordered;
+    busy = true;
+    setOrdered(false);
+    live.textContent = '';
+    updateUI();
+    const next = rerun ? derange(items) : shuffle(items);
+    const reduce = reduceMotion();
+    computeGeo();
+    if (!reduce) await spin(SPIN_MS);
+    items = next;
+    computeGeo();
+    await settle(reduce);
+    busy = false;
+    updateBadges();
+    setOrdered(true);
+    updateUI();
+    live.textContent = 'Order: ' + items.map((it, i) => (i + 1) + ', ' + it.text).join('. ');
+  }
+
+  /* ---------- events ---------- */
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (busy) return;
+    addNames(input.value);
+    input.value = '';
+    input.focus();
+  });
+  input.addEventListener('input', () => {
+    if (/[,;]/.test(input.value)) {
+      const parts = input.value.split(/[,;]/);
+      const rest = parts.pop();
+      addNames(parts.join(','));
+      input.value = rest.replace(/^\s+/, '');
+    }
+  });
+  input.addEventListener('paste', (e) => {
+    const data = e.clipboardData || window.clipboardData;
+    const text = data ? data.getData('text') : '';
+    if (/[\n\r]/.test(text)) { e.preventDefault(); addNames(text); }
+  });
+  go.addEventListener('click', run);
+  clearBtn.addEventListener('click', clearAll);
+
+  let lastW = 0;
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => {
+      const w = arena.clientWidth;
+      if (busy || w === lastW) return;
+      lastW = w;
+      if (items.length) render();
+    }).observe(arena);
+  }
+
+  /* ---------- clock ---------- */
+  const clockHM = $('#clockHM'), clockS = $('#clockS'), clockDate = $('#clockDate');
+  const p2 = (n) => String(n).padStart(2, '0');
+  let shownDay = '';
+  function tick() {
+    const d = new Date();
+    clockHM.textContent = p2(d.getHours()) + ':' + p2(d.getMinutes());
+    clockS.textContent = p2(d.getSeconds());
+    const day = d.toDateString();
+    if (day !== shownDay) {
+      shownDay = day;
+      clockDate.textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  }
+  tick();
+  setInterval(tick, 250);
+
+  /* ---------- sample names so the first view shows what the tool does ---------- */
+  ['Maya', 'Jonas', 'Priya', 'Tomás', 'Lena'].forEach((text) => {
+    const id = nextId++;
+    items.push({ id, text, cls: id % 6, el: null, badge: null, x: 0, y: 0, rot: 0, sc: 1, vx: 0, vy: 0, vr: 0 });
+  });
+  render();
+})();
+</script>
+
+</body></html>
